@@ -16,7 +16,6 @@ const {
 } = FBSDK;
 export default class LoginModal extends Component {
   render(){
-    console.log('aijaa');
     return (
          <View style={{marginTop: 70, marginLeft: 50}}>
           <LoginButton  
@@ -29,7 +28,7 @@ export default class LoginModal extends Component {
                   alert("Login was cancelled");
 
                 } else {
-                  alert("Login was successful with permissions: " + result.grantedPermissions)
+                  this.props.onSuccess();
                 }
               }
             }
@@ -37,6 +36,15 @@ export default class LoginModal extends Component {
           />
 
            </View>)
+  }
+  componentDidMount(){
+    /*
+    AccessToken.getCurrentAccessToken().then(
+                  (data) => {
+                    alert(data.accessToken.toString())
+                  }
+                );
+*/
   }
 
 }

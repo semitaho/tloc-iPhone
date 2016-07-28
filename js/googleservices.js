@@ -1,12 +1,11 @@
 
+
+import {RADIUS, doSearch} from './searchservice.js';
 const API_KEY = 'AIzaSyCqQggXW96VN1ndIQKwq47tewKkvb2w4ZI';
 class GoogleServices {
   static searchNearby(region){
     const NEARBY_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?radius=1500&type=restaurant&location='+region.latitude+','+region.longitude+'&key='+API_KEY
-    console.log('doing query',NEARBY_URL);
-
-    return fetch(NEARBY_URL).then(data => data.json())
-      .then( json => json.results);
+    return doSearch(NEARBY_URL).then( json => json.results);
   }
 
   static calculateDistance(region1, region2){
@@ -21,6 +20,26 @@ class GoogleServices {
           c(lat1 * p) * c(lat2 * p) * 
           (1 - c((lon2 - lon1) * p))/2;
     return (12742 * Math.asin(Math.sqrt(a))) * 1000;
+
+  }
+
+  static drawRoute(currentRegion, location){
+    return doSearch('https://maps.googleapis.com/maps/api/directions/json?origin='+currentRegion.latitude+','+currentRegion.longitude+'&mode=walking&destination='+location.lat+','+location.lng+'&key='+API_KEY)
+      .then(data => data.routes[0]);
+  }
+
+  static calculateRegion(northeast, southwest){
+    const LISAKERROIN = 0.001;
+    let latitude = (northeast.lat + southwest.lat) / 2;
+    let longitude = (northeast.lng + southwest.lng) / 2;
+    let latitudeDelta = Math.abs(northeast.lat - southwest.lat) +  LISAKERROIN;
+    let longitudeDelta = Math.abs(northeast.lng - southwest.lng) + LISAKERROIN;
+    return {
+      latitude,
+      longitude,
+      latitudeDelta,
+      longitudeDelta
+    };
 
   }
 
