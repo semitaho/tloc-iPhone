@@ -4,16 +4,13 @@ import {RADIUS, doSearch} from './searchservice.js';
 const API_KEY = 'AIzaSyCqQggXW96VN1ndIQKwq47tewKkvb2w4ZI';
 class GoogleServices {
   static searchNearby(region){
-    const NEARBY_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?radius=1500&type=restaurant&location='+region.latitude+','+region.longitude+'&key='+API_KEY
+    const NEARBY_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?radius=1500&language=en&type=restaurant&location='+region.latitude+','+region.longitude+'&key='+API_KEY
     return doSearch(NEARBY_URL).then( json => json.results);
   }
 
   static calculateDistance(region1, region2){
     var R = 6371; // Radius of the earth in km
     let [lat1, lat2, lon1, lon2] = [region1.latitude, region2.latitude, region1.longitude, region2.longitude];
-    console.log('lat1', lat1);
-        console.log('lat2', lat2);
-
     var p = 0.017453292519943295;    // Math.PI / 180
     var c = Math.cos;
     var a = 0.5 - c((lat2 - lat1) * p)/2 + 
@@ -27,6 +24,13 @@ class GoogleServices {
     return doSearch('https://maps.googleapis.com/maps/api/directions/json?origin='+currentRegion.latitude+','+currentRegion.longitude+'&mode=walking&destination='+location.lat+','+location.lng+'&key='+API_KEY)
       .then(data => data.routes[0]);
   }
+
+  static fetchDetails(placeid){
+    return doSearch('https://maps.googleapis.com/maps/api/place/details/json?placeid='+placeid+'&key='+API_KEY)
+            .then(data => data.result);
+  }
+
+
 
   static calculateRegion(northeast, southwest){
     const LISAKERROIN = 0.001;
