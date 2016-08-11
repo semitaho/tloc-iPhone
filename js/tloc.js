@@ -13,6 +13,8 @@ import {
   StyleSheet,
   Text,
   MapView,
+  Navigator,
+  TabBarIOS,
   View
 } from 'react-native';
 
@@ -28,10 +30,16 @@ export default class TLoc extends Component{
 
     this.onSuccess = this.onSuccess.bind(this);
     this.state = {
+      selectedTab: 'eating',
       annotations: [],
       places: [],
       overlays: []
     };
+  }
+  componentWillReceiveProps(nextProps){
+    if (nextProps.radius !== this.props.radius){
+      console.log('tloc - receiving new radius');
+    }
   }
 
   mapResults(results){
@@ -62,6 +70,9 @@ export default class TLoc extends Component{
       fsservices.fetchDetails(place.venueid).then(data => console.log('vendetails', data));
 
     }
+    this.setState({placesHidden: this.state.places, places: []});
+
+
   }
 
   drawRoute(current, destination){
@@ -106,7 +117,6 @@ export default class TLoc extends Component{
         if (venue.hours) {
           status = venue.hours.status;
         }
-        console.log('vennue', venue);
         let self = {
           venueid: venue.id,
           title: venue.name,
@@ -126,6 +136,7 @@ export default class TLoc extends Component{
   }
 
   componentWillMount(){
+    console.log('tloc - componentWillMount');
     this.watchID = navigator.geolocation.watchPosition(this.onLocationChange);
     fbservices.isLoggedIn().then(isLoggedIn => {
       if (isLoggedIn){
@@ -145,19 +156,17 @@ export default class TLoc extends Component{
   }
 
   render(){
-
     if (this.state.auth){
       return this.renderRoot();
     } else {
       return <LoginModal onSuccess={this.onSuccess} />
     }
-
   }
 
   searchNearbyPlaces(coords){
     Promise.all(
-       [fsservices.searchNearby(coords).then(results => this.mapSquareResults(results)),
-        gservices.searchNearby(coords).then(results =>  this.mapResults(results))
+       [fsservices.searchNearby(this.props.radius, coords).then(results => this.mapSquareResults(results)),
+        gservices.searchNearby(this.props.radius,coords).then(results =>  this.mapResults(results))
        ]
       ).then(results => {
         let flattenResults = results.reduce( (a,b) => a.concat(b)).sort((a,b) => a.title.toLowerCase() < b.title.toLowerCase() ? -1 : 1 );
@@ -222,31 +231,31 @@ export default class TLoc extends Component{
 
   renderRoot(){
     let places =  this.state.places;
+
     return (
-      <View style={{
-          flex: 1, 
-          paddingTop: 20,
-          justifyContent: 'space-between',
-          flexDirection: 'column'
-        }}>
-        <View style={{alignItems: 'center'}}>
-          <Text style={{fontSize: 25}}>Go to eat</Text>
-        </View>
-        {this.state.instructions ? <InstructionsView  instructions={this.state.instructions} /> : <View />}
-        <MapView
-          title="plaaah"
-          annotations={this.state.annotations}
-          region={this.state.region}
-          overlays={this.state.overlays}
-          style={{flex: 7}}
-          showsUserLocation={true} />
-          {this.state.details ? <PlaceDetailsView {...this.state.details} style={{paddingHorizontal: 10}} /> : <View />}
+    
+          <View style={{
+              flex: 1, 
+              paddingTop: 20,
+              justifyContent: 'space-between',
+              flexDirection: 'column'
+            }}>
+            
+            {this.state.instructions ? <InstructionsView  instructions={this.state.instructions} /> : <View />}
+            <MapView
+              annotations={this.state.annotations}
+              region={this.state.region}
+              overlays={this.state.overlays}
+              style={{flex: 7}}
+              showsUserLocation={true} />
+              {this.state.details ? <PlaceDetailsView {...this.state.details} style={{paddingHorizontal: 10}} /> : <View />}
 
-        {places.length > 0 ? <PlacesView style={{flex: 3}} onFocusing={this.onFocusing} onPress={this.onRowSelect}  places={places} /> : <View />}
+            {places.length > 0 ? <PlacesView style={{flex: 3}} onFocusing={this.onFocusing} onPress={this.onRowSelect}  places={places} /> : <View />}
 
 
 
-      </View>
+          </View>
+          
         )
 
   }

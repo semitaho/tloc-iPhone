@@ -3,8 +3,8 @@
 import {RADIUS, doSearch} from './searchservice.js';
 const API_KEY = 'AIzaSyCqQggXW96VN1ndIQKwq47tewKkvb2w4ZI';
 class GoogleServices {
-  static searchNearby(region){
-    const NEARBY_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?radius=1500&language=en&type=restaurant&location='+region.latitude+','+region.longitude+'&key='+API_KEY
+  static searchNearby(radius,region){
+    const NEARBY_URL = 'https://maps.googleapis.com/maps/api/place/nearbysearch/json?radius='+radius+'&language=en&type=restaurant&location='+region.latitude+','+region.longitude+'&key='+API_KEY
     return doSearch(NEARBY_URL).then( json => json.results);
   }
 

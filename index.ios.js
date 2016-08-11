@@ -4,7 +4,7 @@
  * @flow
  */
 
-import TLoc from './js/tloc.js';
+import TLocNavigator from './js/navigator.js';
 import React, { Component } from 'react';
 import {
   AppRegistry,
@@ -12,25 +12,6 @@ import {
   Text,
   View
 } from 'react-native';
-
-class tloc_native extends Component {
-  render() {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.ios.js
-        </Text>
-        <Text style={styles.instructions}>
-          Press Cmd+R to reload,{'\n'}
-          Cmd+D or shake for dev menu
-        </Text>
-      </View>
-    );
-  }
-}
 
 const styles = StyleSheet.create({
   container: {
@@ -52,4 +33,4 @@ const styles = StyleSheet.create({
   },
 });
 
-AppRegistry.registerComponent('tloc_native', () => TLoc);
+AppRegistry.registerComponent('tloc_native', () => TLocNavigator);
