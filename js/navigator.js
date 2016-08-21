@@ -7,6 +7,7 @@ import {watchPosition} from './actions/locationactions';
 import fsservices from './actions/fsservices.js';
 import fbservices from './actions/fbservices.js';
 import gservices from './actions/googleservices.js';
+import {removeHtml} from './util.js';
 
 const routes = [{title: 'Nearby places', key: 'main'}, {title: 'Settings', key: 'settings'}];
 const storageName = 'TLocSettings';
@@ -16,7 +17,7 @@ export default class TLocNavigator extends Component{
 
   constructor(){
     super();
-    this.state = {eating: false, places:[], overlays:[], location: null, annotations:[], fetched: false,type: 'food', radius: 1500};
+    this.state = {eating: false, overlays:[], location: null, locationCurrent: null, annotations:[], fetched: false,type: 'food', radius: 1500};
     this.bind();
   }
 
@@ -27,30 +28,51 @@ export default class TLocNavigator extends Component{
     this.changeSwitchValue = this.changeSwitchValue.bind(this); 
     this.radiusChanged = this.radiusChanged.bind(this);  
     this.typeChanged = this.typeChanged.bind(this);  
-
+    this._onFocusing = this._onFocusing.bind(this);
     this.onNewLocation = this.onNewLocation.bind(this);
     this.searchNearbyPlaces = this.searchNearbyPlaces.bind(this); 
+    this.onRowSelect = this.onRowSelect.bind(this);
+    this.onBlur = this.onBlur.bind(this);
  
   }
 
   onNewLocation(newlocation){
-    if (!this.state.location){
+    if (this.state.location === null){
       return this.initMap(newlocation);
-
     }
     let currentRegion = newlocation.coords;
     currentRegion.latitudeDelta = 0.05;
     currentRegion.longitudeDelta = 0.05;
-    this.setState({region: currentRegion});
+    this.setState({region: currentRegion, locationCurrent: currentRegion});
+  }
+
+  fillDefaultDelta(currentRegion){
+    currentRegion.latitudeDelta = 0.05;
+    currentRegion.longitudeDelta = 0.05;
   }
 
   initMap(newlocation){
     let currentRegion = newlocation.coords;
-    currentRegion.latitudeDelta = 0.05;
-    currentRegion.longitudeDelta = 0.05;
+    this.fillDefaultDelta(currentRegion);
     this.searchNearbyPlaces(newlocation.coords, this.state.radius, this.state.type).then(places => {
-      this.setState({fetched: true, location: currentRegion, annotations: places,region: currentRegion});
-
+      let keys = ['type','radius'];
+      let promisesArray = keys.map(key => AsyncStorage.getItem(storageName+':'+key) );  
+      return Promise.all(promisesArray).then(promises => {
+        let newState = {};
+        for (let i in keys) {
+          let key = keys[i];
+          newState[key] = this.readValue(promises[i]);
+        }
+        newState.annotations = places;
+        newState.annotationsAll= places;
+        newState.region = currentRegion;
+        newState.fetched = true;
+        newState.locationCurrent = currentRegion;
+        newState.location = currentRegion;
+        return newState;
+      });
+    }).then((state) => {
+      this.setState(state);
     });
   }
 
@@ -65,6 +87,7 @@ export default class TLocNavigator extends Component{
         image: gservices.getImage(type), 
         latitude: result.geometry.location.lat, 
         longitude: result.geometry.location.lng,
+        onBlur: event => this.onBlur(event, self),
         onFocus: event =>this.onFocus(event, self)  
       }; 
       return self; 
@@ -134,21 +157,6 @@ export default class TLocNavigator extends Component{
 
   componentWillMount(){
     this.watchID = watchPosition(this.onNewLocation);
-
-    console.log('navigator - will mount');
-    let keys = ['type','radius'];
-    let promisesArray = keys.map(key => AsyncStorage.getItem(storageName+':'+key) );  
-
-    Promise.all(promisesArray).then(promises => {
-      for (let i in keys) {
-        let key = keys[i];
-        let newState = {};
-        newState[key] = this.readValue(promises[i]);
-        this.setState(newState);
-      }
-      return promisesArray;
-    }).then(() => console.log('done'));
- 
   }
 
   readValue(val){
@@ -162,7 +170,6 @@ export default class TLocNavigator extends Component{
   }
 
   readBooleanValue(val){
-    console.log('has val', val);
     if (!val || val === '2') {
       return false;
     }
@@ -191,9 +198,7 @@ export default class TLocNavigator extends Component{
 
   radiusChanged(val){
     this.save(storageName+':radius', val.toString(), () => {
-      console.log('radius change complete.');
       this.searchNearbyPlaces(this.state.location,val, this.state.type).then(places => {
-        console.log('got places taas', places);
         this.setState({annotations: places});
         //this.setState({fetched: true, annotations: places,region: currentRegion});
       });
@@ -204,7 +209,6 @@ export default class TLocNavigator extends Component{
     this.save(storageName+':type', val, () => {
       this.setState({type: val});
       this.searchNearbyPlaces(this.state.location,this.state.radius, val).then(places => {
-        console.log('got places taas', places);
         this.setState({annotations: places});
         //this.setState({fetched: true, annotations: places,region: currentRegion});
       });
@@ -224,6 +228,81 @@ export default class TLocNavigator extends Component{
     this.refs.nav.push(routes[1]); 
   }
 
+  _onFocusing(place, isFocus){
+    if (!isFocus){
+      let annotations = this.state.annotationsAll.slice();
+      this.setState({annotations});
+      return;
+    }
+    let annotations = this.state.annotations;
+    let placeFound  = annotations.find( annotation => annotation.title === place.title)
+    let newRegion = Object.assign({}, this.state.region, {
+      latitude:placeFound.latitude,
+      longitude: placeFound.longitude
+    });
+    console.log('place found', placeFound);
+    let newAnnotations = [placeFound];
+    this.setState({region: newRegion, annotations: newAnnotations});
+  }
+
+
+  onFocus(event, place){
+    let locobject = {lat: place.latitude, lng: place.longitude};
+    this.drawRoute(this.state.locationCurrent, locobject);
+    if (place.gplaceid){
+      gservices.fetchDetails(place.gplaceid).then(data => console.log('details', data));
+    }
+    else if (place.venueid){
+      fsservices.fetchDetails(place.venueid).then(data => console.log('vendetails', data));
+
+    }
+    console.log('place single', place);
+    this.setState({annotations: [place]})
+  }
+
+  onBlur(){
+    console.log(' on bluring ');
+    let region = this.state.locationCurrent;
+    this.setState({annotations: this.state.annotationsAll,overlays: [], region});
+  }
+
+  onRowSelect(place){
+    console.log('on row select ',place);
+    this.onFocus(null, place);
+  }
+  drawRoute(current, destination){
+
+
+    gservices.drawRoute(current, destination)
+    .then(route => {
+      let coordinates = route.legs[0].steps.map(step => {
+        return {
+          latitude: step.start_location.lat,
+          longitude: step.start_location.lng,
+        };
+      })
+      let lastStep = route.legs[0].steps[route.legs[0].steps.length-1];
+      let lastCoordinate = {
+        latitude: lastStep.end_location.lat, 
+        longitude: lastStep.end_location.lng 
+      };
+      coordinates.push(lastCoordinate);
+      let overlays = [
+        {coordinates, 
+         strokeColor: '#f007',
+        lineWidth: 5}
+      ];
+
+      let leg = route.legs[0];
+      let instructions = removeHtml(leg.steps[0].html_instructions)+' '+leg.steps[0].distance.text;
+      let details = { end_location: leg.end_location, address: leg.end_address, distance: leg.distance.value+' m', duration: leg.duration.text};
+      let region = gservices.calculateRegion(route.bounds.northeast, route.bounds.southwest);
+      this.setState({overlays, details,region, instructions});
+
+    });
+  }
+
+
   _createSettingsNav(){
     const settingsNav = {
       component: Settings,
@@ -238,7 +317,10 @@ export default class TLocNavigator extends Component{
                 places={this.state.annotations}
                 region={this.state.region}
                 overlays={this.state.overlays}
+                instructions={this.state.instructions}
                 annotations={this.state.annotations}
+                onFocusing={this._onFocusing}
+                onRowSelect={this.onRowSelect}
             />)
   }
 
@@ -250,8 +332,6 @@ export default class TLocNavigator extends Component{
       <Navigator
         ref="nav"
         renderScene={(route) => {
-          console.log('on render scene...');
-
           switch(route.__navigatorRouteID){
             case 0:
               return this._createMainScene();
@@ -270,7 +350,7 @@ export default class TLocNavigator extends Component{
         }}
         navigationBar={
           <Navigator.NavigationBar
-            style={{backgroundColor: 'white'}}
+            style={{backgroundColor: 'white', height: 10 }}
             routeMapper={{
               LeftButton: (route, navigator, index, navState) =>
               { 
@@ -294,7 +374,7 @@ export default class TLocNavigator extends Component{
   }
         initialRoute={routes[0]}
         initialRouteStack={routes}
-        style={{flex: 1}} />
+        style={{}} />
     );
   }
 }

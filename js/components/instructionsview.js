@@ -7,8 +7,8 @@ import {
  export default class InstructionsView extends Component{
   render(){
       return (
-        <View style={{alignItems: 'center'}}>
-            <Text style={{fontSize: 15, marginBottom: 10, fontWeight: 'bold'}}>{this.props.instructions}</Text>
+        <View>
+            <Text style={{fontSize: 15, fontWeight: 'bold', alignItems: 'center'}}>{this.props.instructions}</Text>
         </View>)
   }
 
