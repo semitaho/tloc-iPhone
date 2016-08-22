@@ -78,6 +78,17 @@ export default class TLocNavigator extends Component{
 
   mapResults(results, type){
     let annotations = results.map(result => {
+      console.log('result',result);
+
+      let status = '';
+      if (result.opening_hours){
+        if (result.opening_hours.open_now){
+          status='Open';
+        } else {
+          status='Closed';
+        }
+      }
+
       let self = {
         rightCalloutView: (<Text>Google</Text>), 
         title: result.name,
@@ -85,6 +96,7 @@ export default class TLocNavigator extends Component{
         address: result.vicinity,
         category: result.types[0], 
         image: gservices.getImage(type), 
+        status, 
         latitude: result.geometry.location.lat, 
         longitude: result.geometry.location.lng,
         onBlur: event => this.onBlur(event, self),
@@ -231,7 +243,8 @@ export default class TLocNavigator extends Component{
   _onFocusing(place, isFocus){
     if (!isFocus){
       let annotations = this.state.annotationsAll.slice();
-      this.setState({annotations});
+      let region = this.state.locationCurrent;
+      this.setState({annotations, instructions: null, region, overlays: []});
       return;
     }
     let annotations = this.state.annotations;
@@ -240,24 +253,20 @@ export default class TLocNavigator extends Component{
       latitude:placeFound.latitude,
       longitude: placeFound.longitude
     });
-    console.log('place found', placeFound);
     let newAnnotations = [placeFound];
-    this.setState({region: newRegion, annotations: newAnnotations});
+    this.setState({region: newRegion});
   }
 
 
   onFocus(event, place){
     let locobject = {lat: place.latitude, lng: place.longitude};
-    this.drawRoute(this.state.locationCurrent, locobject);
+    this.drawRoute(place, this.state.locationCurrent, locobject);
     if (place.gplaceid){
       gservices.fetchDetails(place.gplaceid).then(data => console.log('details', data));
     }
     else if (place.venueid){
       fsservices.fetchDetails(place.venueid).then(data => console.log('vendetails', data));
-
     }
-    console.log('place single', place);
-    this.setState({annotations: [place]})
   }
 
   onBlur(){
@@ -270,9 +279,7 @@ export default class TLocNavigator extends Component{
     console.log('on row select ',place);
     this.onFocus(null, place);
   }
-  drawRoute(current, destination){
-
-
+  drawRoute(place, current, destination){
     gservices.drawRoute(current, destination)
     .then(route => {
       let coordinates = route.legs[0].steps.map(step => {
@@ -296,8 +303,11 @@ export default class TLocNavigator extends Component{
       let leg = route.legs[0];
       let instructions = removeHtml(leg.steps[0].html_instructions)+' '+leg.steps[0].distance.text;
       let details = { end_location: leg.end_location, address: leg.end_address, distance: leg.distance.value+' m', duration: leg.duration.text};
-      let region = gservices.calculateRegion(route.bounds.northeast, route.bounds.southwest);
-      this.setState({overlays, details,region, instructions});
+      let region = gservices.calculateRegion(route.bounds.northeast, route.bounds.southwest);      
+      let placeAndDetails = Object.assign({},place, details);
+      console.log('detailsz', placeAndDetails);
+
+      this.setState({annotations: [placeAndDetails], overlays, details,region, instructions});
 
     });
   }

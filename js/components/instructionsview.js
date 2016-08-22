@@ -1,4 +1,5 @@
 import React, { Component } from 'react'; 
+import NavButton from './navbutton.js';
 import {
   View,
   Text
@@ -7,8 +8,10 @@ import {
  export default class InstructionsView extends Component{
   render(){
       return (
-        <View>
-            <Text style={{fontSize: 15, fontWeight: 'bold', alignItems: 'center'}}>{this.props.instructions}</Text>
+        <View style={{flexDirection: 'row'}}>
+            <Text style={{fontSize: 15, flex:2, fontWeight: 'bold', alignItems: 'center'}}>{this.props.instructions}</Text>
+            <NavButton label="Cancel" onPress={this.props.onCancel} />
+        
         </View>)
   }
 

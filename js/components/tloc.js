@@ -98,7 +98,7 @@ export default class TLoc extends Component{
               flexDirection: 'column'
             }}>
             
-            {this.props.instructions ? <InstructionsView  instructions={this.props.instructions} /> : null}
+            {this.props.instructions ? <InstructionsView  instructions={this.props.instructions} onCancel={event => this.props.onFocusing(null, false) } /> : null}
             
             <MapView
               annotations={this.props.annotations}
