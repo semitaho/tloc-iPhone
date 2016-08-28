@@ -6,7 +6,6 @@ import {
 
 } from 'react-native';
 export default props => {
-  console.log('props', props);
   return (
         <TouchableHighlight onPress={event => props.onPress(props)} onPressIn={event => props.onFocusing(props, true) } onPressOut={event => props.onFocusing(props,false) } >
           <View style={{paddingVertical: 10, flexDirection: 'row', borderBottomWidth: 1, borderColor: 'gray'}} >
@@ -14,7 +13,7 @@ export default props => {
               <Text style={{fontWeight: 'bold', fontSize: 16}}>{props.title}</Text>
               <Text>{props.category}</Text>
               <Text>{props.address}</Text>
-              <Text style={{fontWeight: 'bold', marginTop: 10}}>{props.status}</Text>
+              <Text style={{fontWeight: 'bold'}}>{props.status}</Text>
             </View>
             {props.distance ?
             <View style={{flex: 2}}>

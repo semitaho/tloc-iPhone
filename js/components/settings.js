@@ -29,10 +29,19 @@ export default class Settings extends Component{
               <Section title="Search type of interest">
                   <Picker 
                           selectedValue={this.props.type} 
-                          onValueChange={this.props.typeChanged}>
+                          onValueChange={(val) => this.props.valueChanged('type', val)}>
                     <Picker.Item label="Eating" value="food" />
                     <Picker.Item label="Post office" value="post_office" />
                     <Picker.Item label="Bicycle store" value="bicycle_store" />
+                  </Picker>
+              </Section>
+              <Section title="Map type">
+                  <Picker 
+                          selectedValue={this.props.mapType} 
+                          onValueChange={val => this.props.valueChanged('mapType', val)}>
+                    <Picker.Item label="Standard" value="standard" />
+                    <Picker.Item label="Satellite" value="satellite" />
+                    <Picker.Item label="Hybrid" value="hybrid" />
                   </Picker>
               </Section>
               <Section title="Search radius">

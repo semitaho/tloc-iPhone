@@ -5,5 +5,5 @@ import {
 } from 'react-native';
 
 export default props => {
-  return (<View style={{flexDirection: 'row', flex:1, justifyContent: 'space-between'}}>{props.children}</View>)
+  return (<View style={{flexDirection: 'row', flex:1, justifyContent: 'space-around'}}>{props.children}</View>)
 };

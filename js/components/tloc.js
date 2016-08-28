@@ -66,28 +66,9 @@ export default class TLoc extends Component{
     */
   }
 
- 
-  onLocationChange(position){
-    /*
-    let coords = position.coords;
-    let currentRegion = position.coords;
-    if (!this.isFocused()){
-      currentRegion.latitudeDelta = 0.05;
-      currentRegion.longitudeDelta = 0.05;
-    }
-    this.setState({region: currentRegion, location: currentRegion})
-    if (!this.hasPlacesSeached()){
-      this.searchNearbyPlaces(coords);
-      return;
-    }
-    if (this.isFocused()){
-      this.drawRoute(currentRegion, this.state.details.end_location);
-    }
-    */
-
-  }
 
   renderRoot(){
+    console.log('maptype', this.props.mapType);
     let places =  this.props.places; 
     return (
           <View style={{
@@ -103,6 +84,7 @@ export default class TLoc extends Component{
             <MapView
               annotations={this.props.annotations}
               region={this.props.region}
+              mapType={this.props.mapType}
               overlays={this.props.overlays}
               style={{flex: 7}}
               showsUserLocation={true} />

@@ -6,3 +6,7 @@ export function removeHtml(text){
     result = body.replace(regex, "");
   return result;
 }
+
+export function mapToFlatCoordinates(decodedPolylineArr){
+  
+}

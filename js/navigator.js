@@ -7,11 +7,12 @@ import {watchPosition} from './actions/locationactions';
 import fsservices from './actions/fsservices.js';
 import fbservices from './actions/fbservices.js';
 import gservices from './actions/googleservices.js';
-import {removeHtml} from './util.js';
-
+import {removeHtml, mapToFlatCoordinates} from './util.js';
+import polyline from 'polyline';
 const routes = [{title: 'Nearby places', key: 'main'}, {title: 'Settings', key: 'settings'}];
 const storageName = 'TLocSettings';
-
+const R_EARTH = 6378;
+const LISAKERROIN = 0.001;
 
 export default class TLocNavigator extends Component{
 
@@ -27,7 +28,7 @@ export default class TLocNavigator extends Component{
     this.changeValue = this.changeValue.bind(this);    
     this.changeSwitchValue = this.changeSwitchValue.bind(this); 
     this.radiusChanged = this.radiusChanged.bind(this);  
-    this.typeChanged = this.typeChanged.bind(this);  
+    this.valueChanged = this.valueChanged.bind(this);  
     this._onFocusing = this._onFocusing.bind(this);
     this.onNewLocation = this.onNewLocation.bind(this);
     this.searchNearbyPlaces = this.searchNearbyPlaces.bind(this); 
@@ -41,21 +42,39 @@ export default class TLocNavigator extends Component{
       return this.initMap(newlocation);
     }
     let currentRegion = newlocation.coords;
-    currentRegion.latitudeDelta = 0.05;
-    currentRegion.longitudeDelta = 0.05;
+    this.fillDefaultDelta(currentRegion);
     this.setState({region: currentRegion, locationCurrent: currentRegion});
   }
 
   fillDefaultDelta(currentRegion){
-    currentRegion.latitudeDelta = 0.05;
-    currentRegion.longitudeDelta = 0.05;
+    currentRegion.latitudeDelta = this.calculateNewLatitude();
+    currentRegion.longitudeDelta = this.calculateNewLongitude(currentRegion.latitude);
+  }
+
+  calculateNewLatitude(){
+    const LISAKERROIN = 0.001;
+
+    let newVal =  ((this.state.radius / 1000) / R_EARTH * (180 / Math.PI) ) + LISAKERROIN;
+    console.log('new val', newVal);
+    return newVal;
+  }
+
+  calculateNewLongitude(latitude){
+    const LISAKERROIN = 0.001;
+    let latitudeDelta =  ((this.state.radius / 1000) / R_EARTH * (180 / Math.PI) / Math.cos(latitude * Math.PI/180) ) + LISAKERROIN;
+    return latitudeDelta;
+
+  }
+
+  loadSettings(){
+
   }
 
   initMap(newlocation){
     let currentRegion = newlocation.coords;
     this.fillDefaultDelta(currentRegion);
     this.searchNearbyPlaces(newlocation.coords, this.state.radius, this.state.type).then(places => {
-      let keys = ['type','radius'];
+      let keys = ['type', 'mapType','radius'];
       let promisesArray = keys.map(key => AsyncStorage.getItem(storageName+':'+key) );  
       return Promise.all(promisesArray).then(promises => {
         let newState = {};
@@ -63,6 +82,7 @@ export default class TLocNavigator extends Component{
           let key = keys[i];
           newState[key] = this.readValue(promises[i]);
         }
+        console.log('nestate', newState);
         newState.annotations = places;
         newState.annotationsAll= places;
         newState.region = currentRegion;
@@ -78,8 +98,6 @@ export default class TLocNavigator extends Component{
 
   mapResults(results, type){
     let annotations = results.map(result => {
-      console.log('result',result);
-
       let status = '';
       if (result.opening_hours){
         if (result.opening_hours.open_now){
@@ -217,9 +235,12 @@ export default class TLocNavigator extends Component{
     });
   }
 
-  typeChanged(val){
-    this.save(storageName+':type', val, () => {
-      this.setState({type: val});
+  valueChanged(type,val){
+    this.save(storageName+':'+type, val, () => {
+      let stateNew = {};
+      stateNew[type] = val;
+
+      this.setState(stateNew);
       this.searchNearbyPlaces(this.state.location,this.state.radius, val).then(places => {
         this.setState({annotations: places});
         //this.setState({fetched: true, annotations: places,region: currentRegion});
@@ -262,10 +283,10 @@ export default class TLocNavigator extends Component{
     let locobject = {lat: place.latitude, lng: place.longitude};
     this.drawRoute(place, this.state.locationCurrent, locobject);
     if (place.gplaceid){
-      gservices.fetchDetails(place.gplaceid).then(data => console.log('details', data));
+      //gservices.fetchDetails(place.gplaceid).then(data => console.log('details', data));
     }
     else if (place.venueid){
-      fsservices.fetchDetails(place.venueid).then(data => console.log('vendetails', data));
+      //fsservices.fetchDetails(place.venueid).then(data => console.log('vendetails', data));
     }
   }
 
@@ -276,39 +297,32 @@ export default class TLocNavigator extends Component{
   }
 
   onRowSelect(place){
-    console.log('on row select ',place);
     this.onFocus(null, place);
   }
   drawRoute(place, current, destination){
     gservices.drawRoute(current, destination)
     .then(route => {
-      let coordinates = route.legs[0].steps.map(step => {
-        return {
-          latitude: step.start_location.lat,
-          longitude: step.start_location.lng,
-        };
-      })
-      let lastStep = route.legs[0].steps[route.legs[0].steps.length-1];
-      let lastCoordinate = {
-        latitude: lastStep.end_location.lat, 
-        longitude: lastStep.end_location.lng 
-      };
-      coordinates.push(lastCoordinate);
+      console.log('legs', route.legs[0].steps);
+      let decodedPolylines = route.legs[0].steps.map(step => polyline.decode(step.polyline.points));
+      let flattenPolylines =  decodedPolylines.reduce((a,b) => a.concat(b))
+        .map(arr =>{
+          return {
+            latitude: arr[0],
+            longitude: arr[1]
+          }
+
+        }); 
       let overlays = [
-        {coordinates, 
-         strokeColor: '#f007',
+        {coordinates: flattenPolylines, 
+         strokeColor: 'yellow',
         lineWidth: 5}
       ];
-
       let leg = route.legs[0];
       let instructions = removeHtml(leg.steps[0].html_instructions)+' '+leg.steps[0].distance.text;
       let details = { end_location: leg.end_location, address: leg.end_address, distance: leg.distance.value+' m', duration: leg.duration.text};
       let region = gservices.calculateRegion(route.bounds.northeast, route.bounds.southwest);      
       let placeAndDetails = Object.assign({},place, details);
-      console.log('detailsz', placeAndDetails);
-
       this.setState({annotations: [placeAndDetails], overlays, details,region, instructions});
-
     });
   }
 
@@ -325,6 +339,7 @@ export default class TLocNavigator extends Component{
   _createMainScene(){
     return (<TLoc 
                 places={this.state.annotations}
+                mapType={this.state.mapType}
                 region={this.state.region}
                 overlays={this.state.overlays}
                 instructions={this.state.instructions}
@@ -348,9 +363,10 @@ export default class TLocNavigator extends Component{
             case 1:
               return (<Settings
                         type={this.state.type}
+                        mapType={this.state.mapType}
                         radius={this.state.radius}
                         changeValue={this.changeValue}
-                        typeChanged={this.typeChanged}
+                        valueChanged={this.valueChanged}
                         radiusChanged={this.radiusChanged}
                         save={this.save}
                       />)
