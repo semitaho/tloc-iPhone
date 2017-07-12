@@ -7,7 +7,6 @@ import {
   Picker,
   AsyncStorage
 } from 'react-native';
-import SectionRow from './sectionrow.js';
 import Section from './section.js';
 
 export default class Settings extends Component{
@@ -25,16 +24,17 @@ export default class Settings extends Component{
   
    
   render(){
-    return (<View style={{flex: 1, marginTop: 70, justifyContent:'flex-start', alignItems: 'center'}}>
+    return (<View style={{flex: 1}}>
               <Section title="Search type of interest">
-                  <Picker 
+                  <Picker
                           selectedValue={this.props.type} 
                           onValueChange={(val) => this.props.valueChanged('type', val)}>
-                    <Picker.Item label="Eating" value="food" />
+                    <Picker.Item label="Eating" value="restaurant" />
                     <Picker.Item label="Post office" value="post_office" />
                     <Picker.Item label="Bicycle store" value="bicycle_store" />
                   </Picker>
               </Section>
+              
               <Section title="Map type">
                   <Picker 
                           selectedValue={this.props.mapType} 
@@ -44,9 +44,20 @@ export default class Settings extends Component{
                     <Picker.Item label="Hybrid" value="hybrid" />
                   </Picker>
               </Section>
+              
               <Section title="Search radius">
                 <Slider minimumValue={100} onSlidingComplete={this.props.radiusChanged}  value={this.props.radius} onValueChange={(val) => this.props.changeValue('radius', val) } step={100} maximumValue={5000} />
                 <Text>Current radius {this.props.radius} meters</Text>
+              </Section>
+              
+              <Section title="Sort places">
+                <Picker 
+                          selectedValue={this.props.mapType} 
+                          onValueChange={val => this.props.valueChanged('mapType', val)}>
+                    <Picker.Item label="Alphabetically" value="standard" />
+                    <Picker.Item label="Satellite" value="satellite" />
+                    <Picker.Item label="Hybrid" value="hybrid" />
+                </Picker>
               </Section>
             </View>)
   }

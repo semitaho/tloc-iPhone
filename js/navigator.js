@@ -20,6 +20,8 @@ export default class TLocNavigator extends Component{
     super();
     this.state = {eating: false, overlays:[], location: null, locationCurrent: null, annotations:[], fetched: false,type: 'food', radius: 1500};
     this.bind();
+    console.log('hei vaan');
+
   }
 
   bind(){
@@ -38,6 +40,7 @@ export default class TLocNavigator extends Component{
   }
 
   onNewLocation(newlocation){
+    console.log('kekkonen');
     if (this.state.location === null){
       return this.initMap(newlocation);
     }
@@ -71,9 +74,11 @@ export default class TLocNavigator extends Component{
   }
 
   initMap(newlocation){
+    console.log('initing...');
     let currentRegion = newlocation.coords;
     this.fillDefaultDelta(currentRegion);
     this.searchNearbyPlaces(newlocation.coords, this.state.radius, this.state.type).then(places => {
+      
       let keys = ['type', 'mapType','radius'];
       let promisesArray = keys.map(key => AsyncStorage.getItem(storageName+':'+key) );  
       return Promise.all(promisesArray).then(promises => {
@@ -97,6 +102,7 @@ export default class TLocNavigator extends Component{
   }
 
   mapResults(results, type){
+    console.log('results', results);
     let annotations = results.map(result => {
       let status = '';
       if (result.opening_hours){
@@ -171,6 +177,7 @@ export default class TLocNavigator extends Component{
   }
 
   searchNearbyPlaces(coords, radius,type){
+    console.log('search n');
     return Promise.all(
        [//fsservices.searchNearby(radius, coords).then(results => this.mapSquareResults(results)),
         gservices.searchNearby(radius,coords, type).then(results =>  this.mapResults(results,type))
@@ -350,6 +357,7 @@ export default class TLocNavigator extends Component{
   }
 
   render() {
+
     if (!this.state.fetched){
       return null;
     }

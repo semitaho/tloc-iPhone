@@ -1,7 +1,8 @@
 import React, { Component } from 'react'; 
 import {
   ListView,
-  Text
+  Text,
+  RecyclerViewBackedScrollView
 } from 'react-native';
 
 import PlaceView from './placerow.js';
@@ -20,6 +21,7 @@ import PlaceView from './placerow.js';
                                     onFocusing={this.props.onFocusing} 
                                     onPress={this.props.onPress}
                                     />}
+            renderScrollComponent={props => <RecyclerViewBackedScrollView {...props} />}                                    
             dataSource={dataSource}>
         </ListView>)
   }

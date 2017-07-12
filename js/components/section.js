@@ -6,6 +6,11 @@ import {
 
 
 export default props => {
-  return (<View style={{paddingVertical: 10}}><Text style={{fontWeight: 'bold', marginBottom: 15}} >{props.title}</Text>{props.children}</View>)
+  return (<View style={{flexDirection: 'row', padding: 5, borderBottomWidth: 1, borderColor: 'gray', alignItems: 'center', justifyContent: 'space-between'}}>
+            <Text style={{flex: 2, fontWeight: 'bold'}}>{props.title}</Text>
+            <View style={{flex: 3}}>
+              {props.children}
+            </View>
+          </View>)
 };
 
